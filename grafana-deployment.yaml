@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  replicas: 1 # Start with one replica for Grafana
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest # Use the official Grafana image
+          ports:
+            - containerPort: 3000 # Default Grafana UI port
+          # You might want to add resource requests and limits here for better resource management
+          # resources:
+          #   requests:
+          #     cpu: "200m"
+          #     memory: "512Mi"
+          #   limits:
+          #     cpu: "500m"
+          #     memory: "1024Mi"
+          # For persistent storage of Grafana data (dashboards, config),
+          # uncomment the following and define a PVC
+          # volumeMounts:
+          #   - name: grafana-storage-volume
+          #     mountPath: /var/lib/grafana
+      # For persistent storage, define a PersistentVolumeClaim and reference it here
+      # volumes:
+      #   - name: grafana-storage-volume
+      #     persistentVolumeClaim:
+      #       claimName: grafana-pvc # You would define this PVC separately
+      # Optional: Configure Grafana admin password via Secret
+      # env:
+      #   - name: GF_SECURITY_ADMIN_PASSWORD
+      #     valueFrom:
+      #       secretKeyRef:
+      #         name: grafana-admin-secret # Name of your Grafana admin password Secret
+      #         key: admin-password # Key within the Secret

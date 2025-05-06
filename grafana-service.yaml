@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service # This is the Service name to access Grafana UI
+  labels:
+    app: grafana
+spec:
+  selector:
+    app: grafana # Selects the Grafana Pods
+  ports:
+    - protocol: TCP
+      port: 80 # The port you will access the service on (e.g., via NodePort)
+      targetPort: 3000 # The Grafana container port
+  type: LoadBalancer # Use NodePort to expose Grafana outside the cluster for easy access
+  # Alternatively, use LoadBalancer if your cloud provider supports it for a stable external IP
+  # type: LoadBalancer

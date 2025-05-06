@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  labels:
+    app: prometheus
+spec:
+  replicas: 1 # Start with one replica for monitoring
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus-service-account # <-- Add this line to specify the ServiceAccount
+      containers:
+        - name: prometheus
+          image: prom/prometheus:latest # Use the official Prometheus image
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml" # Mount the configuration file
+            - "--storage.tsdb.retention.time=15d" # Configure data retention (e.g., 15 days)
+            # Add other args as needed, e.g., for storage path
+            # - "--storage.tsdb.path=/prometheus"
+          ports:
+            - containerPort: 9090 # Default Prometheus UI port
+          volumeMounts:
+            - name: prometheus-config-volume
+              mountPath: /etc/prometheus/ # Mount the ConfigMap here
+            # For persistent storage of Prometheus data (recommended for production),
+            # uncomment the following and define a PVC
+            # - name: prometheus-storage-volume
+            #   mountPath: /prometheus/
+      volumes:
+        - name: prometheus-config-volume
+          configMap:
+            name: prometheus-config # Reference the ConfigMap defined above
+      # For persistent storage, define a PersistentVolumeClaim and reference it here
+      # volumes:
+      #   - name: prometheus-storage-volume
+      #     persistentVolumeClaim:
+      #       claimName: prometheus-pvc # You would define this PVC separately

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service # This is the internal DNS name for Prometheus
+  labels:
+    app: prometheus
+spec:
+  selector:
+    app: prometheus # Selects the Prometheus Pods to route traffic to
+  ports:
+    - protocol: TCP
+      port: 9090 # The port the Service will listen on inside the cluster
+      targetPort: 9090 # The container port of the Prometheus Pod
+  type: ClusterIP # Expose Prometheus internally within the cluster for Grafana access
+  # If you need to access the Prometheus UI directly from outside the cluster
+  # (e.g., for debugging), you could change type to NodePort or LoadBalancer,
+  # but ClusterIP is sufficient for Grafana to connect.
