@@ -32,7 +32,6 @@ jobs:
     # Deploy main monitoring stack
     - name: Deploy Monitoring Stack
       run: |
-        cd Monitoring
         kubectl apply -f graphana-prometheus-stack.yaml -n $NAMESPACE
 
     # Add Grafana datasource configuration
