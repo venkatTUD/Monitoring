@@ -59,7 +59,6 @@ jobs:
                 timeInterval: "30s"
                 httpMethod: GET
                 queryTimeout: "60s"
-                httpHeaderName1: "X-Scope-OrgID"
         EOF
 
     # Add dashboard provider configuration
@@ -157,7 +156,7 @@ jobs:
                     },
                     "textMode": "auto"
                   },
-                  "pluginVersion": "10.4.2",
+                  "pluginVersion": "8.5.5",
                   "targets": [
                     {
                       "datasource": {
