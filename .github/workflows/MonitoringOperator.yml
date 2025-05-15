@@ -1,0 +1,50 @@
+name: Deploy Targeted Monitoring to GKE Cluster
+on:
+  workflow_dispatch:
+
+env:
+  GKE_CLUSTER_NAME: receipt-dev-cluster
+  GKE_REGION: us-central1
+  NAMESPACE: dev
+
+jobs:
+  deploy-monitoring:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up gcloud
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: eadtud
+        install_components: 'gke-gcloud-auth-plugin'
+
+    - name: Configure kubectl
+      run: |
+        gcloud container clusters get-credentials $GKE_CLUSTER_NAME --region $GKE_REGION
+
+    - name: Deploy Targeted Prometheus
+      run: |
+        kubectl apply -f graphana-prometheus-stack.yaml
+        if [ $? -ne 0 ]; then
+          echo "Deployment failed"
+          exit 1
+        fi
+        
+    - name: Verify Deployment
+      run: |
+        kubectl get pods -n $NAMESPACE
+        echo -e "\nGrafana will be available at:"
+        echo "http://$(kubectl get svc -n $NAMESPACE grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+        echo "Use admin/admin to login"
+
+    - name: Verify Services
+      run: |
+        kubectl wait --for=condition=ready pod -l app=prometheus -n $NAMESPACE --timeout=300s
+        kubectl wait --for=condition=ready pod -l app=grafana -n $NAMESPACE --timeout=300s

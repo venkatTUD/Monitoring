@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  labels:
+    app: prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      - job_name: 'receipt-backend'
+        static_configs:
+          - targets: ['receipt-backend-service.dev.svc.cluster.local:9090']
+        metrics_path: '/actuator/prometheus'
+
+      - job_name: 'receipt-frontend'
+        static_configs:
+          - targets: ['receipt-frontend-service.dev.svc.cluster.local:22137']
+        metrics_path: '/metrics'
+
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'grafana'
+        static_configs:
+          - targets: ['grafana-service.dev.svc.cluster.local:80']
+        metrics_path: '/metrics'

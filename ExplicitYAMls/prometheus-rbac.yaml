@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: prometheus-service-account # A dedicated ServiceAccount for Prometheus
-  namespace: default # Or the namespace where you deployed Prometheus
+  namespace: dev # Or the namespace where you deployed Prometheus
 
 ---
 
@@ -37,7 +37,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: prometheus-service-account # Name of the ServiceAccount created above
-  namespace: default # Namespace of the ServiceAccount
+  namespace: dev # Namespace of the ServiceAccount
 roleRef:
   kind: ClusterRole
   name: prometheus-cluster-role # Name of the ClusterRole created above

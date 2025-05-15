@@ -19,6 +19,13 @@ spec:
           image: grafana/grafana:latest # Use the official Grafana image
           ports:
             - containerPort: 3000 # Default Grafana UI port
+              resources:
+                    limits:
+                      cpu: "100m"
+                      memory: "100Mi"
+                    requests:
+                      cpu: "50m"
+                      memory: "50Mi"
           # You might want to add resource requests and limits here for better resource management
           # resources:
           #   requests:
