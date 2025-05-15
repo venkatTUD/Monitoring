@@ -57,6 +57,33 @@ jobs:
               editable: false
               jsonData:
                 timeInterval: "30s"
+                httpMethod: GET
+                queryTimeout: "60s"
+                httpHeaderName1: "X-Scope-OrgID"
+        EOF
+
+    # Add dashboard provider configuration
+    - name: Configure Dashboard Provider
+      run: |
+        cat <<EOF | kubectl apply -n $NAMESPACE -f -
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: grafana-dashboard-provider
+          labels:
+            app: grafana
+        data:
+          dashboard-provider.yaml: |-
+            apiVersion: 1
+            providers:
+            - name: 'default'
+              orgId: 1
+              folder: ''
+              type: file
+              disableDeletion: false
+              editable: true
+              options:
+                path: /var/lib/grafana/dashboards
         EOF
 
     # Add additional Grafana dashboards
@@ -72,50 +99,102 @@ jobs:
         data:
           pod-status.json: |-
             {
-              "title": "Pod Status Monitor",
-              "tags": ["kubernetes", "pods"],
-              "timezone": "browser",
+              "annotations": {
+                "list": []
+              },
+              "editable": true,
+              "fiscalYearStartMonth": 0,
+              "graphTooltip": 0,
+              "id": null,
+              "links": [],
+              "liveNow": false,
               "panels": [
                 {
-                  "title": "Pod Status Overview",
-                  "type": "stat",
-                  "datasource": "Prometheus",
-                  "gridPos": {"x": 0, "y": 0, "w": 24, "h": 8},
-                  "targets": [
-                    {
-                      "expr": "up{job='receipt-backend'} or up{job='receipt-frontend'}",
-                      "legendFormat": "{{pod}}",
-                      "refId": "A"
-                    }
-                  ],
-                  "options": {
-                    "colorMode": "value",
-                    "graphMode": "area",
-                    "justifyMode": "auto",
-                    "orientation": "auto",
-                    "reduceOptions": {
-                      "calcs": ["lastNotNull"],
-                      "fields": "",
-                      "values": false
-                    },
-                    "textMode": "auto"
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
                   },
                   "fieldConfig": {
                     "defaults": {
                       "color": {
                         "mode": "thresholds"
                       },
+                      "mappings": [],
                       "thresholds": {
                         "mode": "absolute",
                         "steps": [
-                          {"color": "red", "value": null},
-                          {"color": "green", "value": 1}
+                          {
+                            "color": "red",
+                            "value": null
+                          },
+                          {
+                            "color": "green",
+                            "value": 1
+                          }
                         ]
                       }
+                    },
+                    "overrides": []
+                  },
+                  "gridPos": {
+                    "h": 8,
+                    "w": 24,
+                    "x": 0,
+                    "y": 0
+                  },
+                  "id": 1,
+                  "options": {
+                    "colorMode": "value",
+                    "graphMode": "area",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "reduceOptions": {
+                      "calcs": [
+                        "lastNotNull"
+                      ],
+                      "fields": "",
+                      "values": false
+                    },
+                    "textMode": "auto"
+                  },
+                  "pluginVersion": "10.4.2",
+                  "targets": [
+                    {
+                      "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                      },
+                      "editorMode": "code",
+                      "expr": "up{job=~\"receipt-backend|receipt-frontend\"}",
+                      "legendFormat": "{{pod}}",
+                      "range": true,
+                      "refId": "A"
                     }
-                  }
+                  ],
+                  "title": "Pod Status Overview",
+                  "type": "stat"
                 }
-              ]
+              ],
+              "refresh": "5s",
+              "schemaVersion": 38,
+              "style": "dark",
+              "tags": [
+                "kubernetes",
+                "pods"
+              ],
+              "templating": {
+                "list": []
+              },
+              "time": {
+                "from": "now-6h",
+                "to": "now"
+              },
+              "timepicker": {},
+              "timezone": "browser",
+              "title": "Pod Status Monitor",
+              "uid": "pod-status",
+              "version": 1,
+              "weekStart": ""
             }
         EOF
 
@@ -136,3 +215,9 @@ jobs:
       run: |
         kubectl rollout restart deployment/grafana -n $NAMESPACE
         kubectl rollout status deployment/grafana -n $NAMESPACE
+
+    # Clean up any duplicate datasources
+    - name: Clean up duplicate datasources
+      run: |
+        kubectl delete configmap grafana-datasource-provider -n $NAMESPACE --ignore-not-found=true
+        kubectl delete configmap grafana-provisioning-datasources -n $NAMESPACE --ignore-not-found=true
