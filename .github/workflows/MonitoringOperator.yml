@@ -32,7 +32,7 @@ jobs:
     # Deploy main monitoring stack
     - name: Deploy Monitoring Stack
       run: |
-        kubectl apply -f Monitoring/graphana-prometheus-stack.yaml -n $NAMESPACE
+        kubectl apply -f graphana-prometheus-stack.yaml -n $NAMESPACE
 
     # Add additional Grafana dashboards
     - name: Deploy Additional Grafana Dashboards
