@@ -43,6 +43,9 @@ data:
       evaluation_interval: 30s
       scrape_timeout: 10s
 
+    rule_files:
+      - /etc/prometheus/rules/*.yml
+
     scrape_configs:
       - job_name: 'receipt-backend'
         static_configs:
@@ -60,6 +63,34 @@ data:
         static_configs:
           - targets: ['localhost:9090']
         scrape_interval: 15s
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: dev
+data:
+  pod-alerts.yml: |
+    groups:
+    - name: pod_alerts
+      rules:
+      - alert: PodDown
+        expr: up{job=~"receipt-backend|receipt-frontend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pod {{ $labels.pod }} is down"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been down for more than 1 minute."
+
+      - alert: PodRestarting
+        expr: increase(kube_pod_container_status_restarts_total{job=~"receipt-backend|receipt-frontend"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} is restarting"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted in the last 5 minutes."
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -108,12 +139,17 @@ spec:
               mountPath: /etc/prometheus/
             - name: prometheus-storage
               mountPath: /prometheus
+            - name: rules-volume
+              mountPath: /etc/prometheus/rules
       volumes:
         - name: config-volume
           configMap:
             name: prometheus-config
         - name: prometheus-storage
           emptyDir: {}
+        - name: rules-volume
+          configMap:
+            name: prometheus-rules
 ---
 apiVersion: v1
 kind: Service
@@ -172,6 +208,31 @@ data:
       options:
         path: /var/lib/grafana/dashboards
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-alertmanager
+  namespace: dev
+  labels:
+    app: grafana
+data:
+  alertmanager.yml: |-
+    apiVersion: 1
+    receivers:
+      - name: 'default-receiver'
+        email_configs:
+          - to: 'admin@example.com'
+            from: 'grafana@example.com'
+            smarthost: 'smtp.example.com:587'
+            auth_username: 'grafana'
+            auth_password: 'password'
+    route:
+      group_by: ['alertname']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: 'default-receiver'
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -219,6 +280,8 @@ spec:
             - name: GF_INSTALL_PLUGINS
               value: "grafana-piechart-panel,grafana-worldmap-panel"
             - name: GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS
+              value: "true"
+            - name: GF_ALERTING_ENABLED
               value: "true"
           ports:
             - containerPort: 3000
